@@ -9,3 +9,9 @@ Using Linear discriminant analysis to build a binary classifier for spam and non
 * lda-spambase.R
 * lda-spambase.Rmd
 * lda-spambase.html
+
+### Naive Bayes
+Using naive bayes classifier to see if the metrics can be improved.
+* naivebayes-spambase.R
+* naivebayes-spambase.Rmd
+* naivebayes-spambase.html
