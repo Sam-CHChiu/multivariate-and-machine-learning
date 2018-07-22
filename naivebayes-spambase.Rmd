@@ -1,0 +1,97 @@
+---
+title: "Naive Bayes Classifier - Email vs. Spam"
+author: "C. H. Chiu"
+date: "2018年7月22日"
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(1234)
+```
+
+## Introduction
+The dataset 'spambase' derives from a collection of spam e-mails and non-spam e-mails. Most of the variables indicate whether a particularwordd or character was frequently occurring in the e-mail. A class variable 'class' determines whether the observation is classfied as 'spam' or normal 'email'.
+
+Previously, we've tried linear discriminant analysis on this specific dataset. In this document, we apply naive bayes method for this binary classification problem and check how it performs compared to the linear discriminant analysis.
+
+## Analysis
+### Preparation
+We load a few packages before we start the analysis:
+
+* data.table, dplyr: dataset manipulations
+* ggplot2: graphs
+* caret: naive bayes and cross-validation
+* plotROC: ROC curve
+```{r load packages, message=FALSE, warning=FALSE}
+library(data.table)
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(plotROC)
+```
+
+### Load in the data
+We use fread() function from 'data.table' library to read in our dataset.
+```{r set wd, include=FALSE}
+setwd('~/projects/multivariate-and-machine-learning/')
+```
+
+```{r load in data}
+spamtest = fread('spambase.txt')
+setDT(spamtest)
+dim(spamtest)
+```
+
+As we see there are 4601 rows and 63 variables in this dataset.
+
+### Correlations
+Naive bayes classifier is based on the condition that every independent variables (features) are basically indepedent from each other. We identify if there are highly correlated or even identical variables in the datasets. In the following section, we're actually able to find 2 sets of identical variables and remove the duplicates from the datasets.
+```{r correlation}
+cor = cor(spamtest[, sapply(spamtest, is.numeric), with = F], method = 'pearson')
+cor.column = which(cor > 0.99999, arr.ind = T)[which(cor > 0.99999, arr.ind = T)[,1]!=which(cor > 0.99999, arr.ind = T)[,2],]
+spamtest[,c('classdigit.1','X.1'):=NULL]
+```
+
+### Split into training and testing sets
+We split 70% of the rows as the training the set with the rest of 30% as the testing set.
+```{r train and test sets}
+split = 0.7
+index = sample(nrow(spamtest), round(nrow(spamtest)*split))
+spam.train = spamtest[index]
+spam.test  = spamtest[-index]
+```
+
+
+### Naive Bayes Classifier
+We use the training function from 'caret' package for building the naive bayes classifier. Alongside the model building, 10-fold cross validation is also used to improve the model. 
+```{r naive bayes, warning=FALSE}
+ctrl = trainControl(method="cv", summaryFunction=twoClassSummary, classProbs=T, savePredictions = T)
+nb.fit = train(class ~ ., data = spam.train, method = "naive_bayes", trControl = ctrl)
+summary(nb.fit)
+```
+
+### Prediciton and accuracy
+Now that the predictive model is built, we can use the testing set to evaluate the metrics such as confusion matrix, accuracy and ROC curve.
+```{r prediciton and confusion matrix}
+nb.pred = predict(nb.fit, spam.test)
+actual.value = factor(spam.test$class)
+conf.matrix = confusionMatrix(nb.pred, actual.value, positive = 'spam')
+conf.matrix$table
+conf.matrix$overall[1]
+```
+
+The accuracy of the model is around 65%, and the prediction result is pretty poor compared to linear discriminant analysis. However, from the table we can find out the classifier misclassify non-spam emails a lot more frequent than it misclassifies spam emails. We can check the sensitivity (recall) and specificity to see the numerical difference.
+
+### Sensitivity and Specificity
+```{r sensitivity and specificity}
+conf.matrix$byClass[1:2]
+```
+
+As we see above, a huge difference between sensitivity and specificity exists. The classifier is pretty good at identifying true spam emails, yet it also wrongly declares true emails as spams very frequently. In fact, 43% speficitity means over half of non-spam emails would be declared as spams if we use the naive bayes classifier. This could be a big problem when non-spam emails are the majority, and it is most likely the true circumstances in real life. If the user only cares about spams can be identified and ignores the misclassfication of non-spam emails, then the naive bayes classifier in this case would be an alternative. However in real life, it is a very rare mindset for researchers to tackle such problems.
+
+## Conclusion
+Previously in the document of linear discriminant analysis, the classifier favors specificity than sensitivity. On the opposite, the naive bayes classifier favors otherwise. As said in the previous chapter, if sensitivity (recall) is what user all cares about, then this classifier would be a good choice. However, this is rarely the case. If we evaluate the accuracy of both classifiers, the linear discriminat analysis classifier clearly outperforms naive bayes classfier on this specific dataset. Once again as mentioned in the previous document, to evaluate the effectiveness of a classifer, we should always make sure what goals we want to set, and then choose the right metrics to evaluate.
