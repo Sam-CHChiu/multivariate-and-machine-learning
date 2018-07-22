@@ -14,13 +14,13 @@ set.seed(1234)
 ```
 
 ## Introduction
-The dataset 'spambase' derives from a collectionof spam e-mails and non-spam e-mails. Most of the variables indicate whether a particularwordd or character was frequently occurring in the e-mail. A class variable 'class' determines whether the observation is classfied as 'spam' or normal 'email'.
+The dataset 'spambase' derives from a collection of spam e-mails and non-spam e-mails. Most of the variables indicate whether a particularwordd or character was frequently occurring in the e-mail. A class variable 'class' determines whether the observation is classfied as 'spam' or normal 'email'.
 
 In this document we're applying linear discriminat analysis for this binary classification problem.
 
 ## Analysis
 ### Preparation
-We're loading a few packages before we start the analysis:
+We load a few packages before we start the analysis:
 
 * data.table, dplyr: dataset manipulations
 * ggplot2: graphs
@@ -36,7 +36,7 @@ library(plotROC)
 ```
 
 ### Load in the data
-We're using fread() function from 'data.table' library to read in our dataset.
+We use fread() function from 'data.table' library to read in our dataset.
 ```{r set wd, include=FALSE}
 setwd('~/projects/multivariate-and-machine-learning/')
 ```
@@ -68,7 +68,7 @@ spam.test  = spamtest[-index]
 
 ### Exploratory analysis
 ```{r descriptive analysis}
-spam.train %>% summary
+spam.train %>% sapply(class)
 ggplot(spam.train, aes(x = class, fill=class)) + 
   geom_bar() + 
   stat_count(aes(label=..count..), geom="text", vjust=-1, size=5) +
@@ -97,11 +97,24 @@ conf_matrix$overall[1]
 
 The accuracy of the model is around 89%. Not the best result but certainly good enough to correctly classify the binary class. However, if we only care if the spam emails can be correctly identified while the non-spam emails are not the priority, metrics such as sensitivity (recall) or area under ROC curve (AUC) are better alternatives than accuracy.
 
-### Sensitivity and Specificity
+### Sensitivity, Specificity and ROC curve
 ```{r sensitivity and specificity}
 conf_matrix$byClass[1:2]
 ```
 
-Accuracy is sort of a balance between sensitivity and specificity. In the spam mail case, we generally want to evaluate how good the spam mails can be correctly identified. Whether the non-spam emails can be correctly identified as non-spam is usually not our concern. Sensitivity above shows how good the model can identify the spam mails while specificity is for non-spam emails. 
+Accuracy is sort of a balance between sensitivity and specificity. In the spam mail case, we generally want to evaluate how good the spam mails can be correctly identified. Whether the non-spam emails can be correctly identified as non-spam is usually not our top concern. Sensitivity above shows how good the model can identify the spam mails while specificity is for non-spam emails. From above, we can clearly see the current model actually classifies non-spam mails better than spam mails.
 
-From above, we can clearly see the model actually classifies non-spam mails better than spam mails. With this regard, 80% senstitivity might not be good enough to identify spam emails. We may try out other classifiers to see if there are better alternatives than the linear discriminant analysis.
+```{r roc curve, warning=F}
+roc.plot = ggplot(lda.fit$pred, aes(m = spam, d = factor(obs, levels = c('spam', 'email')) )) + 
+  geom_roc(hjust = -0.4, vjust = 1.5) + coord_equal() + 
+  xlab('1 - Specificity') + ylab('Sensitivity') + 
+  labs(title='ROC Curve') + theme(plot.title = element_text(hjust = 0.5))
+roc.plot
+calc_auc(roc.plot)[3]
+```
+If we construct a ROC curve and calculate the area under curve (AUC), 95% is actually not a bad result for AUC. This is due to the nature that ROC curve takes both sensitivity and specificity into consideration. In our case while the sensitivity of the current model is around 80% (4 out of 5 spam mails can be correctly identified), the specificity on the other hand is around 97%, very close to 100%.
+
+## Conclusion
+To evaluate the effectiveness of model, we need to determine what goal we want to achieve beforehand. In conclusion, if the user is trying to identify as many spam mails as possible, then it is suggested to try different classifiers since 80% of sensitivity might not be enough. On the other hand, if the user wants to avoid non-spam emails wrongly classifed as spams, 97% of specificity from the current model is actually a very viable choice.
+
+

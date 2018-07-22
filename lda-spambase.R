@@ -15,6 +15,13 @@ spamtest = fread('spambase.txt')
 setDT(spamtest)
 dim(spamtest)
 
+spamtest$class = factor(spamtest$class, levels = c('spam', 'email'))
+
+#spamtest$class[spamtest$class == 'email'] <- 0
+#spamtest$class[spamtest$class == 'spam'] <- 1
+#spamtest$class <- as.factor(spamtest$class)
+#spamtest$class
+
 ## Check correlation
 cor = cor(spamtest[, sapply(spamtest, is.numeric), with = F], method = 'pearson')
 cor.column = which(cor > 0.99999, arr.ind = T)[which(cor > 0.99999, arr.ind = T)[,1]!=which(cor > 0.99999, arr.ind = T)[,2],]
@@ -49,12 +56,11 @@ confusionMatrix(lda.pred, actual.value, positive = 'spam')$overall[1] # accuracy
 confusionMatrix(lda.pred, actual.value, positive = 'spam')$byClass[1:2] # sensitivity (recall), specificity
 
 #ROC Curve and AUC
-
-roc.plot = ggplot(lda.fit$pred, aes(m = spam, d = obs )) + 
+roc.plot = ggplot(lda.fit$pred, aes(m = spam, d = factor(obs, levels = c('spam', 'email')) )) + 
   geom_roc(hjust = -0.4, vjust = 1.5) + coord_equal() + 
   xlab('1 - Specificity') + ylab('Sensitivity') + 
   labs(title='ROC Curve') + theme(plot.title = element_text(hjust = 0.5))
 roc.plot
-calc_auc(roc.plot)
+calc_auc(roc.plot)[3]
 
   
