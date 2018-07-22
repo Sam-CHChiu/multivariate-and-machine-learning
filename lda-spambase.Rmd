@@ -16,7 +16,7 @@ set.seed(1234)
 ## Introduction
 The dataset 'spambase' derives from a collection of spam e-mails and non-spam e-mails. Most of the variables indicate whether a particularwordd or character was frequently occurring in the e-mail. A class variable 'class' determines whether the observation is classfied as 'spam' or normal 'email'.
 
-In this document we're applying linear discriminat analysis for this binary classification problem.
+In this document we're applying linear discriminant analysis for this binary classification problem.
 
 ## Analysis
 ### Preparation
